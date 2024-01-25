@@ -20,13 +20,14 @@ const LanguageSelect: FC<ILanguageSelectProps> = ({
       trigger='click'
       htmlContent={
         <div className='w-full py-1'>
+          <div className='py-2 px-3 mx-1 flex items-center gap-2 hover:bg-gray-100 rounded-lg cursor-pointer text-gray-700 text-sm' onClick={() => onSelect('Português[BR]')}>Português[BR]</div>
           <div className='py-2 px-3 mx-1 flex items-center gap-2 hover:bg-gray-100 rounded-lg cursor-pointer text-gray-700 text-sm' onClick={() => onSelect('English')}>English</div>
           <div className='py-2 px-3 mx-1 flex items-center gap-2 hover:bg-gray-100 rounded-lg cursor-pointer text-gray-700 text-sm' onClick={() => onSelect('Chinese')}>简体中文</div>
         </div>
       }
       btnElement={
         <div className='inline-flex items-center'>
-          <span className='pr-[2px] text-xs leading-[18px] font-medium'>{currentLanguage === 'English' ? 'English' : '简体中文'}</span>
+          <span className='pr-[2px] text-xs leading-[18px] font-medium'>{currentLanguage === 'English' ? 'English' : currentLanguage === 'Português[BR]' ? 'Português[BR]' : '简体中文'}</span>
           <ChevronDown className='w-3 h-3 opacity-60' />
         </div>
       }
