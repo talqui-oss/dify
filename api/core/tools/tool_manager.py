@@ -31,6 +31,7 @@ import mimetypes
 logger = logging.getLogger(__name__)
 
 _builtin_providers = {}
+_builtin_tools_labels = {}
 
 class ToolManager:
     @staticmethod
@@ -175,11 +176,11 @@ class ToolManager:
             controller = ToolManager.get_builtin_provider(provider_name)
             tool_configuration = ToolConfiguration(tenant_id=tanent_id, provider_controller=controller)
 
-            decrypted_credentails = tool_configuration.decrypt_tool_credentials(credentials)
+            decrypted_credentials = tool_configuration.decrypt_tool_credentials(credentials)
 
             return builtin_tool.fork_tool_runtime(meta={
                 'tenant_id': tanent_id,
-                'credentials': decrypted_credentails,
+                'credentials': decrypted_credentials,
                 'runtime_parameters': {}
             }, agent_callback=agent_callback)
         
@@ -191,11 +192,11 @@ class ToolManager:
 
             # decrypt the credentials
             tool_configuration = ToolConfiguration(tenant_id=tanent_id, provider_controller=api_provider)
-            decrypted_credentails = tool_configuration.decrypt_tool_credentials(credentials)
+            decrypted_credentials = tool_configuration.decrypt_tool_credentials(credentials)
 
             return api_provider.get_tool(tool_name).fork_tool_runtime(meta={
                 'tenant_id': tanent_id,
-                'credentials': decrypted_credentails,
+                'credentials': decrypted_credentials,
             })
         elif provider_type == 'app':
             raise NotImplementedError('app provider not implemented')
@@ -233,7 +234,7 @@ class ToolManager:
         if len(_builtin_providers) > 0:
             return list(_builtin_providers.values())
         
-        builtin_providers = []
+        builtin_providers: List[BuiltinToolProviderController] = []
         for provider in listdir(path.join(path.dirname(path.realpath(__file__)), 'provider', 'builtin')):
             if provider.startswith('__'):
                 continue
@@ -264,7 +265,29 @@ class ToolManager:
         # cache the builtin providers
         for provider in builtin_providers:
             _builtin_providers[provider.identity.name] = provider
+            for tool in provider.get_tools():
+                _builtin_tools_labels[tool.identity.name] = tool.identity.label
+
         return builtin_providers
+    
+    @staticmethod
+    def get_tool_label(tool_name: str) -> Union[I18nObject, None]:
+        """
+            get the tool label
+
+            :param tool_name: the name of the tool
+
+            :return: the label of the tool
+        """
+        global _builtin_tools_labels
+        if len(_builtin_tools_labels) == 0:
+            # init the builtin providers
+            ToolManager.list_builtin_providers()
+
+        if tool_name not in _builtin_tools_labels:
+            return None
+        
+        return _builtin_tools_labels[tool_name]
     
     @staticmethod
     def user_list_providers(
@@ -295,7 +318,7 @@ class ToolManager:
             )
 
             # get credentials schema
-            schema = provider.get_credentails_schema()
+            schema = provider.get_credentials_schema()
             for name, value in schema.items():
                 result_providers[provider.identity.name].team_credentials[name] = \
                     ToolProviderCredentials.CredentialsType.defaut(value.type)
@@ -311,7 +334,7 @@ class ToolManager:
         
         for db_builtin_provider in db_builtin_providers:
             # add provider into providers
-            credentails = db_builtin_provider.credentials
+            credentials = db_builtin_provider.credentials
             provider_name = db_builtin_provider.provider
             result_providers[provider_name].is_team_authorization = True
 
@@ -321,8 +344,8 @@ class ToolManager:
             # init tool configuration
             tool_configuration = ToolConfiguration(tenant_id=tenant_id, provider_controller=controller)
             # decrypt the credentials and mask the credentials
-            decrypted_credentails = tool_configuration.decrypt_tool_credentials(credentials=credentails)
-            masked_credentials = tool_configuration.mask_tool_credentials(credentials=decrypted_credentails)
+            decrypted_credentials = tool_configuration.decrypt_tool_credentials(credentials=credentials)
+            masked_credentials = tool_configuration.mask_tool_credentials(credentials=decrypted_credentials)
 
             result_providers[provider_name].team_credentials = masked_credentials
 
@@ -337,7 +360,7 @@ class ToolManager:
             except Exception as e:
                 logger.error(f'failed to get user name for api provider {db_api_provider.id}: {str(e)}')
             # add provider into providers
-            credentails = db_api_provider.credentials
+            credentials = db_api_provider.credentials
             provider_name = db_api_provider.name
             result_providers[provider_name] = UserToolProvider(
                 id=db_api_provider.id,
@@ -367,8 +390,8 @@ class ToolManager:
             tool_configuration = ToolConfiguration(tenant_id=tenant_id, provider_controller=controller)
 
             # decrypt the credentials and mask the credentials
-            decrypted_credentails = tool_configuration.decrypt_tool_credentials(credentials=credentails)
-            masked_credentials = tool_configuration.mask_tool_credentials(credentials=decrypted_credentails)
+            decrypted_credentials = tool_configuration.decrypt_tool_credentials(credentials=credentials)
+            masked_credentials = tool_configuration.mask_tool_credentials(credentials=decrypted_credentials)
 
             result_providers[provider_name].team_credentials = masked_credentials
 
@@ -426,8 +449,8 @@ class ToolManager:
         # init tool configuration
         tool_configuration = ToolConfiguration(tenant_id=tenant_id, provider_controller=controller)
 
-        decrypted_credentails = tool_configuration.decrypt_tool_credentials(credentials)
-        masked_credentials = tool_configuration.mask_tool_credentials(decrypted_credentails)
+        decrypted_credentials = tool_configuration.decrypt_tool_credentials(credentials)
+        masked_credentials = tool_configuration.mask_tool_credentials(decrypted_credentials)
 
         try:
             icon = json.loads(provider.icon)
