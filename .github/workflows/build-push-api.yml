@@ -1,0 +1,30 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ["Feat/talqui-custom-implementation"]
+  pull_request:
+    branches: ["Feat/talqui-custom-implementation"]
+
+env:
+  AWS_DEFAULT_OUTPUT: json
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag 032017376000.dkr.ecr.us-east-1.amazonaws.com/talqui-ai-dify:latest
+
+      - name: Authenticate Elastic Container Registry (AWS:ECR)
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 032017376000.dkr.ecr.us-east-1.amazonaws.com
+
+      - name: Push Image
+        run: docker push 032017376000.dkr.ecr.us-east-1.amazonaws.com/talqui-ai-dify:latest

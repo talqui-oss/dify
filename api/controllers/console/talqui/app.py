@@ -88,7 +88,6 @@ class TalquiChatApi(Resource):
                 from_source="service-api",
                 streaming=streaming,
             )
-            logging.info(response)
             return compact_response(response)
         except Exception as e:
             logging.exception("internal server error.")

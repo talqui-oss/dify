@@ -221,7 +221,7 @@ class CompletionService:
                     model_id=app_model_config.id,
                     override_model_configs=None,
                     conversation_id=args['conversation_id'],
-                    inputs={},
+                    inputs=inputs,
                     query=message['messageValue'],
                     message="",
                     message_tokens=0,
@@ -255,11 +255,11 @@ class CompletionService:
             invoke_from=from_source,
             inputs=inputs,
             query=query,
-            # files=[],
+            files=[],
             conversation=conversation,
             stream=streaming,
             extras={
-                "auto_generate_conversation_name": True
+                "auto_generate_conversation_name": False
             }
         )
 
